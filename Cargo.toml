@@ -5,3 +5,17 @@ authors = ["Yuhao Fang <fangyuhao@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+reqwest = "0.9.12"
+serde = "1.0.88"
+serde_derive = "1.0.88"
+serde_json = "1.0.38"
+log = "0.4.0"
+env_logger = "0.6.1"
+
+[[example]]
+name = "depth"
+path = "examples/depth.rs"
+
+[lib]
+name = "huobi"
+path = "src/lib.rs"
