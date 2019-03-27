@@ -2,7 +2,7 @@ mod signature;
 mod types;
 
 use chrono::prelude::Utc;
-use log::info;
+use log::debug;
 use reqwest::Method;
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -28,12 +28,19 @@ pub struct Huobi {
 
 impl Huobi {
     pub fn new(key: &str, secret: &str, id: u64, host: &'static str) -> Huobi {
+        let mut default_headers = http::HeaderMap::new();
+        default_headers.insert("Content-Type", "application/json".parse().unwrap());
+        default_headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36".parse().unwrap());
         Huobi {
             key: key.to_string(),
             secret: secret.to_string(),
             id: id,
             uri: host,
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .tcp_nodelay()
+                .default_headers(default_headers)
+                .build()
+                .unwrap(),
         }
     }
 
@@ -43,7 +50,6 @@ impl Huobi {
         map.insert("SignatureMethod".to_string(), "HmacSHA256".to_string());
         map.insert("SignatureVersion".to_string(), "2".to_string());
         let ts = Utc::now();
-        println!("ts: {}", ts.format("%Y-%m-%dT%H:%M:%S"));
         map.insert(
             "Timestamp".to_string(),
             ts.format("%Y-%m-%dT%H:%M:%S").to_string(),
@@ -67,12 +73,12 @@ impl Huobi {
             _ => serde_json::to_string(body).unwrap(),
         };
         let u: Url = url.parse().unwrap();
-        let result = self.client.request(method, u)
-                    .header("Content-Type", "application/json")
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36")
-                    .body(b)
-                    .send()?
-                    .json::<ApiResponse<T>>()?;
+        let result = self
+            .client
+            .request(method, u)
+            .body(b)
+            .send()?
+            .json::<ApiResponse<T>>()?;
         Ok(result)
     }
 }
@@ -94,7 +100,7 @@ impl Function for Huobi {
         let payload = signature::sign("GET", URL_HUOBI_PRO, suffix, &body, &self.secret);
         url += "?";
         url += &payload;
-        println!("url = {}", url);
+        debug!("url = {}", url);
         self.call_api("GET", &url, &body)
     }
 }
