@@ -37,3 +37,11 @@ pub struct Account {
     pub account_type: String,
     pub state: String,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Depth {
+    pub bids: Vec<Vec<f64>>,
+    pub asks: Vec<Vec<f64>>,
+    pub ts: i64,
+    pub version: i64,
+}

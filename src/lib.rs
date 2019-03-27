@@ -14,7 +14,10 @@ const URL_HUOBI_PRO: &str = "api.huobi.pro";
 type Result<T> = std::result::Result<T, reqwest::Error>;
 
 pub trait Function {
+    fn depth(&self, symbol: &str, step: &str) -> Result<ApiResponse<Depth>>;
     fn symbols(&self) -> Result<ApiResponse<Symbols>>;
+
+    // auth
     fn account(&self) -> Result<ApiResponse<Accounts>>;
 }
 
@@ -84,6 +87,12 @@ impl Huobi {
 }
 
 impl Function for Huobi {
+    fn depth(&self, symbol: &str, step: &str) -> Result<ApiResponse<Depth>> {
+        let url = format!("{}/market/depth?symbol={}&type={}", self.uri, symbol, step);
+        debug!("depth url = {}", url);
+        Ok(self.client.get(&url).send()?.json()?)
+    }
+
     fn symbols(&self) -> Result<ApiResponse<Symbols>> {
         let mut url = self.uri.to_string();
         let suffix = "/market/symbols";
@@ -110,8 +119,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_get_depth() {
+        let huobi = Huobi::new("", "", 1957, "https://api.huobi.br.com");
+        let depth = huobi.depth("btcusdt", "step1").unwrap();
+        assert_eq!(depth.status, "ok");
+    }
+
+    #[test]
     fn test_get_symbols() {
-        let huobi = Huobi::new("", "", 1957, "https://api.huobi.br.com/");
+        let huobi = Huobi::new("", "", 1957, "https://api.huobi.br.com");
         let symbol = huobi.symbols().unwrap();
         assert_eq!(symbol.status, "ok");
     }
