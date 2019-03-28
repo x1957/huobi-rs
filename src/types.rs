@@ -45,3 +45,20 @@ pub struct Depth {
     pub ts: i64,
     pub version: i64,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Balance {
+    pub currency: String,
+    #[serde(rename = "type")]
+    pub currency_type: String,
+    pub balance: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BalanceData {
+    pub id: u64,
+    #[serde(rename = "type")]
+    pub account_type: String,
+    pub state: String,
+    pub list: Vec<Balance>,
+}

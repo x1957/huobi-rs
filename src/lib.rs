@@ -1,6 +1,7 @@
 mod signature;
 mod types;
 
+use crate::signature::sign;
 use chrono::prelude::Utc;
 use log::debug;
 use reqwest::Method;
@@ -19,6 +20,7 @@ pub trait Function {
 
     // auth
     fn account(&self) -> Result<ApiResponse<Accounts>>;
+    fn balance(&self) -> Result<ApiResponse<BalanceData>>;
 }
 
 pub struct Huobi {
@@ -112,6 +114,22 @@ impl Function for Huobi {
         debug!("url = {}", url);
         self.call_api("GET", &url, &body)
     }
+
+    fn balance(&self) -> Result<ApiResponse<BalanceData>> {
+        let path = format!("/v1/account/accounts/{}/balance", self.id);
+        let mut url = format!("{}{}", self.uri, &path);
+        /*
+                var path = `/v1/account/accounts/${account_id}/balance`;
+        var body = get_body();
+        var payload = sign_sha('GET', URL_HUOBI_PRO, path, body);
+
+        */
+        let body = self.get_body();
+        let payload = signature::sign("GET", URL_HUOBI_PRO, &path, &body, &self.secret);
+        url += "?";
+        url += &payload;
+        self.call_api("GET", &url, &body)
+    }
 }
 
 #[cfg(test)]
@@ -134,8 +152,15 @@ mod tests {
 
     #[test]
     fn test_get_accounts() {
-        let huobi = Huobi::new("***", "****", 1957, "https://api.huobi.pro");
+        let huobi = Huobi::new("****", "****", 1957, "https://api.huobi.pro");
         let accounts = huobi.account().unwrap();
         assert_eq!(accounts.status, "ok");
+    }
+
+    #[test]
+    fn test_get_balance() {
+        let huobi = Huobi::new("****", "****", 1957, "https://api.huobi.pro");
+        let balance = huobi.balance().unwrap();
+        assert_eq!(balance.status, "ok");
     }
 }
